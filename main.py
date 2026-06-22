@@ -4,35 +4,41 @@
 # 3. Update the SMTP ADDRESS to match your email provider.
 # 4. Update birthdays.csv to contain today's month and day.
 # See the solution video in the 100 Days of Python Course for explainations.
-
-
-from datetime import datetime
-import pandas
-import random
-import smtplib
+import requests
+from twilio.rest import Client
 import os
+#twilio account details
+api_key = os.environ.get("OWM_API_KEY")
+sid = os.environ.get("ACCOUNT_SID")
+token = os.environ.get("AUTH_TOKEN")
 
-# import os and use it to get the Github repository secrets
-MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
+# https://api.openweathermap.org/data/4.0/onecall/current?lat={lat}&lon={lon}&appid={API key}
+# https://api.openweathermap.org/data/4.0/onecall/timeline/1min?lat={lat}&lon={lon}&appid={API key}
+# https://api.openweathermap.org/data/4.0/onecall/timeline/1day?lat={lat}&lon={lon}&appid={API key}
+# api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}
+parameters={
+    "lat":-27.469770,
+    "lon":153.025,
+    "appid":api_key,
+     "cnt":4
+}
 
-today = datetime.now()
-today_tuple = (today.month, today.day)
+url_weather='https://api.openweathermap.org/data/2.5/forecast'
+response=requests.get(url=url_weather,params=parameters)
+response.raise_for_status()
+print(response.status_code)
+weather_data=response.json()
 
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
-
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
-        connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
-        connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
-        )
+for i in range(0,3):
+    if (weather_data["list"][i]['weather'][0]["id"])<700:
+        print(type(weather_data["list"][i]['weather'][0]["id"]))
+        print("carry an umbrella")
+        client=Client(sid,token)
+        # message = client.messages.create(
+        #     from_="+12602548775", body="carry Umbrella", to="+61413960467"
+        # )
+        message = client.messages.create(
+            from_='whatsapp:+14155238886',
+            body='Bring an umbrella!!!',
+            to='whatsapp:+61413960467')
+    print(message.status)
